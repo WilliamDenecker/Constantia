@@ -21,7 +21,7 @@ Alle tabellen hebben RLS en zijn voor `anon` en `authenticated` gesloten. Server
 
 ## Aanmelden en superusers
 
-1. Vul bij **Authentication → URL Configuration** de canonieke productie-URL in bij **Site URL**. Voeg eventuele exacte ontwikkel-URL’s toe als redirects wanneer je die gebruikt. Zet publieke registratie uit bij **Authentication → Providers**.
+1. Vul bij **Authentication → URL Configuration** de canonieke productie-URL in bij **Site URL**. Voeg eventuele exacte ontwikkel-URL’s toe als redirects wanneer je die gebruikt. Zet **Allow new users to sign up** en **Confirm email** aan bij **Authentication → Providers**. Deel de pagina `/registreren` met het team. Open **Beheer → Leden** om bevestigde registraties goed te keuren en aan een spelersprofiel te koppelen. Daar kun je ook beheerdersrollen wijzigen en toegang intrekken of herstellen. Eerdere stemmen blijven bewaard.
 2. Configureer een eigen SMTP-provider voor verzending naar teamleden. Supabase beperkt de standaardmailer tot toegestane adressen. Zie [Custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 3. Gebruik deze links in de corresponderende e-mailtemplates. De tussenpagina vraagt een bevestigingsklik, zodat een scanner de link niet bij een gewoon GET-verzoek gebruikt.
 
@@ -37,6 +37,10 @@ Alle tabellen hebben RLS en zijn voor `anon` en `authenticated` gesloten. Server
    ```html
    <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email">Log in bij Constantia Heren 1</a></p>
    ```
+
+   **Confirm sign up** en **Reset password**
+
+   Gebruik voor registratie hetzelfde linkformaat als voor de magic link met `type=email`. Gebruik voor wachtwoordherstel `type=recovery`.
 
 4. In dit project zijn 21 spelersprofielen geladen en is Williams accountplaats gekoppeld aan zijn opgegeven e-mailadres. Nodig hem vanuit **Authentication → Users → Add user → Send invitation** uit zodra de URL en SMTP zijn ingesteld. Zijn profiel wordt gekoppeld na e-mailverificatie. In Beheer kan hij Zeno later uitnodigen door diens eigen profiel te selecteren. Beide initiële profielen krijgen de rol superuser. Andere uitnodigingen krijgen de rol lid.
 5. Bij een verse database laad je eerst de spelersprofielen, markeer je uitsluitend de twee bedoelde profielen met `initial_superuser = true` en reserveer je de eerste accountplaats in `public.accounts` met het geverifieerde e-mailadres of het e-mailadres voor de uitnodiging. Voor een al geverifieerd account koppel je de overeenkomstige `auth.users.id` bij het reserveren. Contactgegevens en spelerslijst staan uitsluitend in Supabase.

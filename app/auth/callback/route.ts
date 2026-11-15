@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
 
   if (configured() && code) {
     const auth = await authClient();
-    const { error } = await auth.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined);
-    if (!error) redirect("/");
+    const { data, error } = await auth.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined);
+    if (!error) redirect("redirectType" in data && data.redirectType === "recovery" ? "/wachtwoord" : "/");
   }
 
   redirect("/?melding=" + encodeURIComponent(

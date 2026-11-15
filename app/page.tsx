@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { loginWithPassword } from "./account-actions";
 import { redirect } from "next/navigation";
 import { login, vote } from "./actions";
 import { AdminNav, Logout, Notice, deadlineLabel, shortDate } from "./ui";
@@ -16,7 +18,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
   const notice = error_code === "otp_expired"
     ? "Deze inloglink is ongeldig of verlopen. Vraag een nieuwe link aan en open de meest recente mail."
     : melding;
-  const { account, signedIn } = await identity();
+  const { account, signedIn, pending } = await identity();
   const rounds = account ? checked(await database().rpc("round_overview", { actor: account.user_id })) as Round[] : [];
 
   return <>
@@ -32,17 +34,28 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
     <Notice text={notice} />
     {!account ? <section className="panel narrow">
       <p className="eyebrow">Teamtoegang</p>
-      <h2>{signedIn ? "Account heeft geen toegang" : "Log in om te stemmen"}</h2>
-      {signedIn ? <Logout /> : <>
-        <p>Gebruik het e-mailadres waarop je voor het team bent uitgenodigd.</p>
-        <form action={login} className="stack">
-          <label>E-mailadres<input type="email" autoComplete="email" name="email" placeholder="naam@voorbeeld.be" maxLength={254} required /></label>
-          <button disabled={!configured()}>Stuur een inloglink</button>
+      <h2>{pending ? "Wacht op goedkeuring" : signedIn ? "Account heeft geen toegang" : "Log in om te stemmen"}</h2>
+      {signedIn ? <>
+        {pending && <p>Een beheerder moet je account nog aan een spelersprofiel koppelen.</p>}
+        <Logout />
+      </> : <>
+        <form action={loginWithPassword} className="stack">
+          <label>E-mailadres<input type="email" autoComplete="email" name="email" maxLength={254} required /></label>
+          <label>Wachtwoord<input type="password" autoComplete="current-password" name="password" required /></label>
+          <button disabled={!configured()}>Inloggen</button>
         </form>
+        <p><Link href="/registreren">Account aanmaken</Link> · <Link href="/wachtwoord">Wachtwoord instellen of vergeten</Link></p>
+        <details>
+          <summary>Inloggen met een link</summary>
+          <form action={login} className="stack">
+            <label>E-mailadres<input type="email" autoComplete="email" name="email" maxLength={254} required /></label>
+            <button disabled={!configured()}>Stuur een inloglink</button>
+          </form>
+        </details>
         {!configured() && <p className="muted">De aanmeldservice wordt ingesteld.</p>}
       </>}
     </section> : <>
-      <div className="section-title"><h2>Jouw stemrondes</h2><Logout /></div>
+      <div className="section-title"><h2>Jouw stemrondes</h2><Link href="/wachtwoord">Wachtwoord instellen</Link><Logout /></div>
       {rounds.filter(round => round.status !== "concept" && (round.can_vote || round.has_voted)).length === 0 &&
         <p className="panel">Er staan geen stemrondes voor je klaar.</p>}
       {rounds.filter(round => round.status !== "concept" && (round.can_vote || round.has_voted)).map(round =>

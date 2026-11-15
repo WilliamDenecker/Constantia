@@ -21,4 +21,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/", "/beheer", "/archief", "/import"] };
+export const config = { matcher: ["/", "/beheer", "/archief", "/import", "/wachtwoord"] };

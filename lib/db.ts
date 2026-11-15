@@ -45,7 +45,7 @@ export type Round = {
   electorate: number | null; candidates: Pick<Player, "id" | "name">[];
 };
 
-export async function identity(): Promise<{ account: Account | null; signedIn: boolean }> {
+export async function identity(): Promise<{ account: Account | null; signedIn: boolean; pending?: boolean }> {
   if (!configured()) return { account: null, signedIn: false };
   const { data: { user } } = await (await authClient()).auth.getUser();
   if (!user) return { account: null, signedIn: false };
@@ -54,7 +54,7 @@ export async function identity(): Promise<{ account: Account | null; signedIn: b
   const db = database();
   const { data, error } = await db.from("accounts").select("*").eq("user_id", user.id).maybeSingle();
   if (error) throw new Error("De ledenlijst is tijdelijk onbereikbaar.");
-  return { account: data?.active ? data as Account : null, signedIn: true };
+  return { account: data?.active ? data as Account : null, signedIn: true, pending: !data };
 }
 
 export async function requireAccount(admin = false) {

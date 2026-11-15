@@ -28,13 +28,13 @@ export async function signOut() {
 export async function confirmToken(form: FormData) {
   const token_hash = value(form, "token");
   const type = value(form, "type");
-  if (!configured() || !/^[a-zA-Z0-9_-]{20,256}$/.test(token_hash) || (type !== "invite" && type !== "email")) {
+  if (!configured() || !/^[a-zA-Z0-9_-]{20,256}$/.test(token_hash) || (type !== "invite" && type !== "email" && type !== "recovery")) {
     message("/", "Deze inloglink is ongeldig.");
   }
   const auth = await authClient();
   const { data, error } = await auth.auth.verifyOtp({ token_hash, type });
   if (error || !data.user?.email_confirmed_at) message("/", "Deze inloglink is ongeldig of verlopen. Vraag een nieuwe link aan.");
-  redirect("/");
+  redirect(type === "recovery" ? "/wachtwoord" : "/");
 }
 
 export async function vote(form: FormData) {
@@ -103,12 +103,21 @@ export async function savePlayer(form: FormData) {
   message("/beheer", error ? "Speler kon niet worden opgeslagen. Controleer de naam." : "Speler opgeslagen.");
 }
 
-export async function deactivate(form: FormData) {
-  const admin = await requireAccount(true);
-  const email = value(form, "email");
-  const { error } = await database().from("accounts").update({ active: false })
-    .eq("email", email).eq("role", "lid").neq("email", admin.email);
-  message("/beheer", error ? "Lid kon niet worden gedeactiveerd." : "Lid gedeactiveerd.");
+export async function approveRegistration(form: FormData) {
+  const { user_id } = await requireAccount(true);
+  const { error } = await database().rpc("approve_registration", {
+    actor: user_id, target: value(form, "user"), profile: value(form, "player") || null,
+    profile_name: value(form, "name"),
+  });
+  message("/beheer", error ? "Goedkeuring lukte niet. Controleer of het spelersprofiel al gekoppeld is." : "Lid goedgekeurd.");
+}
+
+export async function changeMemberAccess(form: FormData) {
+  const { user_id } = await requireAccount(true);
+  const { error } = await database().rpc("change_member_access", {
+    actor: user_id, target_email: value(form, "email"), change_to: value(form, "change"),
+  });
+  message("/beheer", error ? "Toegang kon niet worden gewijzigd." : "Toegang gewijzigd.");
 }
 
 export async function invite(form: FormData) {
