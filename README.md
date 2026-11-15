@@ -49,6 +49,8 @@ Alleen de twee categorieën, spelers en wedstrijdgegevens worden opgeslagen. Cod
 
 ## Vercel en monitoring
 
+De canonieke productie-URL is [constantia-heren-1.vercel.app](https://constantia-heren-1.vercel.app). De Vercel-instellingen staan bij [constantia-heren-1](https://vercel.com/williamdeneckers-projects/constantia-heren-1/settings). Configureer een Supabase Secret Key uitsluitend als Sensitive productievariabele `SUPABASE_SECRET_KEY` in Vercel. Een nieuwe deployment is nodig nadat die variabele is toegevoegd.
+
 Importeer `WilliamDenecker/Constantia` in het bestaande bijbehorende Vercel-project of maak daarvoor een Next.js-project. Stel **Production Branch** in op `main`. Vul de server-side productievariabelen uit `.env.example` in, configureer de Supabase Auth-URL en voer een productiedeploy uit. Stel op GitHub repositoryvariabele `PRODUCTION_URL` in en plaats dezelfde waarde van `HEALTH_TOKEN` in een Actions-secret. Start **Wekelijkse beschikbaarheidscontrole** handmatig via **Run workflow** en controleer of beide statussen 200 zijn. Elke maandag volgt een geplande run.
 
 Op Supabase Free kan een project na zeven dagen met weinig databaseactiviteit pauzeren. De wekelijkse workflow dient als monitoring. Een betaald Supabase-abonnement voorkomt automatische inactiviteitspauzering. [Supabase Project Pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
