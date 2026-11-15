@@ -55,21 +55,32 @@ export async function createMatch(form: FormData) {
   message("/beheer", error ? "Wedstrijd kon niet worden aangemaakt. Controleer datum en tegenstander." : "Wedstrijd aangemaakt als concept.");
 }
 
+function parseDeadline(form: FormData): string | null {
+  const deadline = value(form, "deadline");
+  if (!deadline) return null;
+  try {
+    return Temporal.PlainDateTime.from(deadline)
+      .toZonedDateTime("Europe/Brussels", { disambiguation: "reject" }).toInstant().toString();
+  } catch {
+    message("/beheer", "Kies een geldig tijdstip in de Belgische tijdzone.");
+  }
+}
+
 export async function openRound(form: FormData) {
   const { user_id } = await requireAccount(true);
-  const deadline = value(form, "deadline");
-  let closes: string | null = null;
-  if (deadline) {
-    try {
-      closes = Temporal.PlainDateTime.from(deadline).toZonedDateTime("Europe/Brussels", { disambiguation: "reject" }).toInstant().toString();
-    } catch {
-      message("/beheer", "Kies een geldig tijdstip in de Belgische tijdzone.");
-    }
-  }
+  const closes = parseDeadline(form);
   const { error } = await database().rpc("open_round", {
     actor: user_id, target: value(form, "round"), chosen: form.getAll("candidates"), voters: form.getAll("voters"), closes,
   });
   message("/beheer", error?.code === "P0001" ? error.message : error ? "Ronde kon niet worden geopend." : "Stemronde geopend.");
+}
+
+export async function setDeadline(form: FormData) {
+  const { user_id } = await requireAccount(true);
+  const { error } = await database().rpc("set_round_deadline", {
+    actor: user_id, target: value(form, "round"), closes: parseDeadline(form),
+  });
+  message("/beheer", error?.code === "P0001" ? error.message : error ? "Deadline kon niet worden opgeslagen." : "Deadline opgeslagen.");
 }
 
 export async function closeRound(form: FormData) {

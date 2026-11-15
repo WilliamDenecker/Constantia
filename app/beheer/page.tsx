@@ -1,5 +1,6 @@
+import { Temporal } from "@js-temporal/polyfill";
 import { checked, database, requireAccount, type Account, type Player, type Round } from "../../lib/db";
-import { closeRound, createMatch, deactivate, invite, openRound, savePlayer } from "../actions";
+import { closeRound, createMatch, deactivate, invite, openRound, savePlayer, setDeadline } from "../actions";
 import { AdminNav, Notice, deadlineLabel, shortDate } from "../ui";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +53,14 @@ export default async function Beheer({ searchParams }: { searchParams: Promise<{
         {round.status !== "concept" && <p>{round.turnout} van {round.electorate} leden hebben gestemd.</p>}
         {round.status === "open" && <>
           {round.deadline && <p>Sluit automatisch op {deadlineLabel(round.deadline)}.</p>}
+          <form action={setDeadline} className="stack">
+            <input type="hidden" name="round" value={round.round_id} />
+            <label>Sluitingsdeadline (Belgische tijd, leeg voor handmatig sluiten)
+              <input type="datetime-local" name="deadline" defaultValue={round.deadline ?
+                Temporal.Instant.from(round.deadline).toZonedDateTimeISO("Europe/Brussels").toPlainDateTime().toString({ smallestUnit: "minute" }) : ""} />
+            </label>
+            <button className="secondary">Deadline opslaan</button>
+          </form>
           <form action={closeRound}><input type="hidden" name="round" value={round.round_id} /><button className="secondary">Stemronde sluiten</button></form>
         </>}
       </details>)}

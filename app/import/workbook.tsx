@@ -12,7 +12,7 @@ type PreviewRow = {
 type Mapping = { sheet: string; start: string; end: string; player: string; man: string; loser: string; date: string; opponent: string };
 const emptyMapping = { sheet: "", start: "2", end: "", player: "A", date: "B", opponent: "C", man: "D", loser: "E" };
 const columns = [
-  ["player", "Spelersnaam", "A"], ["man", "Man of the Match", "D"], ["loser", "Loser of the Match", "E"],
+  ["player", "Spelersnaam"], ["man", "Man of the Match"], ["loser", "Loser of the Match"],
 ] as const;
 
 function cellValue(value: CellValue): Cell {
@@ -47,7 +47,6 @@ export default function ImportWorkbook({ players }: { players: PlayerOption[] })
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [, refreshSheet] = useState(0);
 
   function updateMap(key: keyof Mapping, value: string) {
     setMap(current => ({ ...current, [key]: value }));
@@ -73,7 +72,6 @@ export default function ImportWorkbook({ players }: { players: PlayerOption[] })
       workbook.current = book;
       setSheets(items);
       setMap({ ...emptyMapping, sheet: items[0]?.name ?? "", end: String(items[0]?.count ?? "") });
-      refreshSheet(n => n + 1);
       if (!items.length) setNotice("Het werkboek bevat geen ingevulde werkbladen.");
     } catch {
       setNotice("Het Excel-bestand kon niet worden geopend.");
@@ -160,6 +158,8 @@ export default function ImportWorkbook({ players }: { players: PlayerOption[] })
     catch (error) { issue = (error as Error).message; }
   }
   const names = new Map(players.map(player => [player.id, player.name]));
+  const unknown = rows.filter(row => !row.omit && !row.player).length;
+  const unexpected = rows.filter(row => !row.omit && (!row.man || !row.loser)).length;
   return <>
     <section className="panel stack">
       <h2>Werkboek en kolommen</h2>
@@ -196,7 +196,7 @@ export default function ImportWorkbook({ players }: { players: PlayerOption[] })
       <div className="section-title"><h2>Preview</h2><button className="secondary" disabled={busy} onClick={() => { setRows([]); setConfirmed(false); }}>Preview wissen</button></div>
       {issue && <p className="notice" role="status">{issue}</p>}
       <details>
-        <summary>Rijen controleren en koppelen</summary>
+        <summary>Rijen controleren en koppelen{unknown > 0 && ` · ${unknown} zonder speler`}{unexpected > 0 && ` · ${unexpected} met afwijkende waarde`}</summary>
         {rows.map(row => <div className="import-row" key={row.ref}>
           <strong>{row.source || "Spelersnaam ontbreekt"} · rij {row.ref.split(":")[1]}</strong>
           {!row.player && <p className="muted">Geen automatische koppeling.</p>}

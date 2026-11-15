@@ -5,16 +5,23 @@ export const dynamic = "force-dynamic";
 type Result = { category: string; display_name: string; votes: number | null; rank: number | null; excel_code: number | null };
 type Match = { id: string; played_on: string; opponent: string; source: string; rounds: { status: string } | null; results: Result[] };
 
-export default async function Archive() {
+export default async function Archive({ searchParams }: { searchParams: Promise<{ zoek?: string }> }) {
   await requireAccount(true);
+  const { zoek } = await searchParams;
+  const term = typeof zoek === "string" ? zoek.trim().slice(0, 120) : "";
   const db = database();
   const matches = checked(await db.from("matches").select("id,played_on,opponent,source,rounds(status),results(category,display_name,votes,rank,excel_code)")
     .order("played_on", { ascending: false })) as unknown as Match[];
-  const archive = matches.filter(match => match.source === "excel" || match.rounds?.status === "gesloten");
+  const archive = matches.filter(match => (match.source === "excel" || match.rounds?.status === "gesloten")
+    && (!term || match.opponent.toLowerCase().includes(term.toLowerCase()) || match.played_on.includes(term)));
   return <>
     <AdminNav />
     <h1>Resultatenarchief</h1>
-    {archive.length === 0 && <p className="panel">Er zijn nog geen uitslagen.</p>}
+    <form className="panel stack" action="/archief">
+      <label>Zoek op tegenstander of datum<input name="zoek" type="search" defaultValue={term} maxLength={120} placeholder="Tegenstander of JJJJ-MM-DD" /></label>
+      <button>Zoeken</button>
+    </form>
+    {archive.length === 0 && <p className="panel">{term ? "Geen uitslagen gevonden voor deze zoekopdracht." : "Er zijn nog geen uitslagen."}</p>}
     {archive.map(match => <article className="panel" key={match.id}>
       <p className="eyebrow">{shortDate(match.played_on)} · {match.source === "excel" ? "Historisch · Excel-import" : "Gesloten"}</p>
       <h2>Tegen {match.opponent}</h2>
