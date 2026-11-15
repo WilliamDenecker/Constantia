@@ -12,7 +12,10 @@ export async function login(form: FormData) {
   if (!configured()) message("/", "De verbinding met Supabase is nog niet ingesteld.");
   const email = value(form, "email").toLowerCase();
   if (email.length <= 254 && /^[^ @]+@[^ @]+\.[^ @]+$/.test(email)) {
-    await (await authClient()).auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    const { error } = await (await authClient()).auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error?.status === 429) {
+      message("/", "Wacht even voordat je een nieuwe link aanvraagt. Open intussen de meest recente mail.");
+    }
   }
   message("/", "Als je account is uitgenodigd, ontvang je een e-mail met een inloglink.");
 }

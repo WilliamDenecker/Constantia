@@ -1,11 +1,21 @@
+import { redirect } from "next/navigation";
 import { login, vote } from "./actions";
 import { AdminNav, Logout, Notice, deadlineLabel, shortDate } from "./ui";
 import { checked, configured, database, identity, type Round } from "../lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ melding?: string }> }) {
-  const { melding } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ melding?: string; code?: string; sb_flow_id?: string; error_code?: string }> }) {
+  const { melding, code, sb_flow_id, error_code } = await searchParams;
+  if (typeof code === "string" && code) {
+    const params = new URLSearchParams({ code });
+    if (typeof sb_flow_id === "string" && sb_flow_id) params.set("sb_flow_id", sb_flow_id);
+    redirect("/auth/callback?" + params.toString());
+  }
+
+  const notice = error_code === "otp_expired"
+    ? "Deze inloglink is ongeldig of verlopen. Vraag een nieuwe link aan en open de meest recente mail."
+    : melding;
   const { account, signedIn } = await identity();
   const rounds = account ? checked(await database().rpc("round_overview", { actor: account.user_id })) as Round[] : [];
 
@@ -19,7 +29,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ m
       <div className="pitch" aria-hidden><i /><b /><span /></div>
     </section>
     {account?.role === "superuser" && <AdminNav />}
-    <Notice text={melding} />
+    <Notice text={notice} />
     {!account ? <section className="panel narrow">
       <p className="eyebrow">Teamtoegang</p>
       <h2>{signedIn ? "Account heeft geen toegang" : "Log in om te stemmen"}</h2>
